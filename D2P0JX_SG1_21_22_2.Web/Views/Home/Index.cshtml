@@ -1,0 +1,315 @@
+﻿
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+
+<div class="text-center">
+    <h1 class="display-4">Welcome to my Pizza Handler App!</h1>
+
+    <div id="pizza-handler-app">
+        <div class="button-container pb-3" style="text-align:center;">
+            <button class="btn btn-secondary" v-on:click="loadPizzas">Load</button>
+            <button class="btn btn-success" v-on:click="createPizza">Create</button>
+            <button v-if="enabledBackToList" class="btn btn-secondary" v-on:click="backToList">Back to list</button>
+        </div>
+        <div id="content" style="display: flex; justify-content: center; flex-wrap: wrap;">
+            <div v-if="errors.length > 0">
+                <span v-for="msg in errors" style="color:red;font-weight:bold;">{{ msg }}</span>
+            </div>
+            <div v-if="messages.length > 0">
+                <span v-for="msg in messages" style="color:green;">{{ msg }}</span>
+            </div>
+            <template v-if="operationMode == 0">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Restaurant Id</th>
+                            <th>Name</th>
+                            <th>Size</th>
+                            <th>Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="pizza in pizzas">
+                            <td>{{ pizza.id }}</td>
+                            <td>{{ pizza.restaurantId }}</td>
+                            <td>{{ pizza.name }}</td>
+                            <td>{{ pizza.size }}</td>
+                            <td>{{ pizza.price }}</td>
+                            <td style="width:20%;text-align:right;">
+                                <button class="btn btn-info" v-on:click="viewPizza(pizza)">View</button>
+                                <button class="btn btn-warning" v-on:click="editPizza(pizza)">Edit</button>
+                                <button class="btn btn-danger" v-on:click="deletePizza(pizza)">Delete</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </template>
+            <template v-else-if="operationMode == 1">
+                <view-component v-bind:pizza="selectedPizza"></view-component>
+            </template>
+            <template v-else-if="operationMode == 2">
+                <!--Create case-->
+                <editor-component v-on:saved="savedSuccessfully"
+                                  v-on:cancelled="operationCancelled"></editor-component>
+            </template>
+            <template v-else>
+                <!--Edit case-->
+                <editor-component v-bind:pizza="selectedPizza"
+                                  v-on:saved="savedSuccessfully"
+                                  v-on:cancelled="operationCancelled"></editor-component>
+            </template>
+        </div>
+    </div>
+</div>
+
+<script src="~/lib/vue/vue.js"></script>
+<script src="~/lib/axios/axios.js"></script>
+
+<script type="text/javascript">
+
+    const axi = axios.create({
+        baseURL: 'http://localhost:30944/api/'
+    });
+
+    var pizzaHandlerApp = new Vue({
+        el: '#pizza-handler-app',
+        data: {
+            pizzas: [],
+            selectedPizza: {},
+            operationMode: 0, // 0 listing, 1 view, 2 create, 3 edit
+            messages: [],
+            errors: []
+        },
+        computed: {
+            enabledBackToList() {
+                return this.operationMode != 0;
+            }
+        },
+        methods: {
+
+            loadPizzas() {
+                axi.get('pizza/GetAll').then((response) => {
+                    this.pizzas = response.data;
+                    console.log(response.data);
+                }).catch((err) => {
+                    console.log(err);
+                });
+            },
+            viewPizza: function (pizza) {
+                this.selectedPizza = pizza;
+                this.operationMode = 1;
+            },
+            createPizza: function () {
+                this.operationMode = 2;
+            },
+            editPizza: function (pizza) {
+                this.selectedPizza = pizza;
+                this.operationMode = 3;
+            },
+            deletePizza: function (pizza) {
+                axi.delete('pizza/Delete/' + pizza.id).then((response) => {
+                    if (response.data.isSuccess) {
+                        this.messages.push("Pizza deleted successfully");
+                        this.loadPizzas();
+
+                        setTimeout(() => { this.messages = []; }, 3000);
+                    } else {
+                        this.errors = response.data.messages;
+                        setTimeout(() => { this.errors = []; }, 3000);
+                    }
+                }).catch((err) => {
+                    this.errors.push('Error occured during delete.');
+                    setTimeout(() => { this.errors = []; }, 3000);
+                });
+            },
+            backToList: function () {
+                this.selectedPizza = {};
+                this.operationMode = 0;
+            },
+            savedSuccessfully(msg) {
+                this.selectedPizza = {};
+                this.messages.push(msg);
+                console.log("saved");
+                this.loadPizzas();
+                this.operationMode = 0;
+
+                setTimeout(() => { this.messages = []; }, 3000);
+            },
+            operationCancelled() {
+                this.selectedPizza = {};
+                this.messages.push("The operation has been cancelled.");
+
+                console.warn("cancelled");
+                this.operationMode = 0;
+                setTimeout(() => { this.messages = []; }, 3000);
+            }
+        }
+    });
+
+    Vue.component('view-component', {
+        props: ['pizza'],
+        template: '#view-template'
+    });
+
+    Vue.component('editor-component', {
+        props: ['pizza'],
+        template: '#editor-template',
+        data: function () {
+            return {
+                innerPizza: {},
+                restaurants: [],
+                customers: [],
+                isEdit: false,
+                errors: [],
+                warnings: []
+            };
+        },
+
+
+        methods: {
+            save() {
+                if (this.isEdit) {
+                    axi.put('pizza/Update', this.innerPizza).then(this.handleSuccess).catch((err) => {
+                        console.log(err);
+                        this.handleError(['Error occured during processing.']);
+                    });
+                }
+                else {
+                    if (this.innerPizza.name == '' || this.innerPizza.size ==0 || this.innerPizza.price ==0 || this.innerPizza.restaurantId==0) {
+                        console.warn("empty form");
+                        this.warnings.push("All fields are required! Please enter valid input.");
+                        setTimeout(() => { this.warnings = []; }, 3000);
+                    }
+                    else {
+                        axi.post('pizza/Create', this.innerPizza).then(this.handleSuccess).catch((err) => {
+                            console.log(err);
+                            this.handleError(['Error occured during processing.']);
+                        });
+                    }
+
+                }
+            },
+            cancel() {
+                this.$emit('cancelled');
+            },
+            handleSuccess(response) {
+                if (response.data.isSuccess) {
+                    this.$emit('saved', this.isEdit ? "Pizza edited successfully" : "Pizza created successfully");
+                }
+                else {
+                    this.handleError(response.data.messages);
+                }
+            },
+            handleError(errorMessages) {
+                this.errors = errorMessages;
+
+                setTimeout(() => { this.errors = []; }, 3000);
+            }
+        },
+        created: function () {
+            if (this.pizza != undefined) {
+                this.isEdit = true;
+
+                // Copy
+                this.innerPizza = {
+                    id: this.pizza.id,
+                    restaurantId: this.pizza.restaurantId,
+                    name: this.pizza.name,
+                    size: this.pizza.size,
+                    price: this.pizza.price
+                };
+            } else {
+                // Create new
+                this.innerPizza = {
+                    id: 0,
+                    restaurantId: 0,
+                    name: '',
+                    size: 0,
+                    price: 0,
+                };
+
+            }
+
+            axi.get("restaurant/GetAll").then((response) => {
+                this.restaurants = response.data;
+            }).catch((err) => {
+                console.log(err);
+            });
+
+            axi.get("customer/GetAll").then((response) => {
+                this.customers = response.data;
+            }).catch((err) => {
+                console.log(err);
+            });
+        },
+    });
+</script>
+
+
+<script type="text/x-template" id="view-template">
+    <div style="text-align:left" class="pizza-view-container">
+        <div>
+            <strong>Id</strong><br />
+            <label>{{ pizza.id }}</label>
+        </div>
+        <div>
+            <strong>Restaurant Id</strong><br />
+            <label>{{ pizza.restaurantId }}</label>
+        </div>
+        <div>
+            <strong>Name</strong><br />
+            <label>{{ pizza.name }}</label>
+
+        </div>
+        <div>
+            <strong>Size</strong><br />
+            <label>{{ pizza.size }}</label>
+        </div>
+        <div>
+            <strong>Price</strong><br />
+            <label>{{ pizza.price }}</label>
+        </div>
+
+    </div>
+</script>
+
+
+<script type="text/x-template" id="editor-template">
+    <div style="text-align:left" class="pizza-view-container">
+        <div v-if="errors.length > 0">
+            <span v-for="msg in errors" style="color:red;font-weight:bold;">{{ msg }}</span>
+        </div>
+        <div v-if="warnings.length > 0">
+            <span v-for="msg in warnings" style="color:orange;font-weight:bold;">{{ msg }}</span>
+        </div>
+        <div>
+            <strong>Restaurant</strong><br />
+            <select id="restaurant-selector" v-model="innerPizza.restaurantId" class="form-control">
+                <option v-for="restaurant in restaurants" v-bind:value="restaurant.id">{{ restaurant.name }}</option>
+            </select>
+        </div>
+        <div>
+            <strong>Name</strong><br />
+            <input type="text" name="Name" v-model="innerPizza.name" class="form-control" />
+        </div>
+        <div>
+
+            <strong>Size</strong> <br />
+            <input type="text" v-model.number="innerPizza.size" class="form-control" />
+
+        </div>
+        <div>
+            <strong>Price</strong><br />
+            <input type="text" v-model.number="innerPizza.price" class="form-control" />
+        </div>
+        <div class="float-right pt-3">
+            <button class="btn btn-primary" v-on:click="save">Mentés</button>
+            <button class="btn btn-secondary" v-on:click="cancel">Mégsem</button>
+        </div>
+    </div>
+</script>
+
+

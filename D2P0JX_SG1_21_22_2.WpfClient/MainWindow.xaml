@@ -1,0 +1,123 @@
+﻿<Window x:Class="D2P0JX_SG1_21_22_2.WpfClient.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ViewModels="clr-namespace:D2P0JX_SG1_21_22_2.WpfClient.ViewModels"
+        xmlns:Models="clr-namespace:D2P0JX_SG1_21_22_2.WpfClient.Models"
+        mc:Ignorable="d"
+        Title="Pizza Handler" Height="450" Width="800" Loaded="WindowLoaded" Closing="WindowClose">
+    <Window.Resources>
+        <ViewModels:MainWindowVM x:Key="VM"/>
+        <Models:PizzaModel x:Key="Converter"/>
+        <DataTemplate x:Key="PizzaListTemplate" DataType="Models:PizzaModel">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="1*"/>
+                </Grid.ColumnDefinitions>
+                <Label Content="{Binding Id}" HorizontalAlignment="Center" Grid.Column="0"/>
+                <Label Content="{Binding Name}" HorizontalAlignment="Center" ContentStringFormat="{}{0} Pizza" Grid.Column="1"/>
+                <Label Content="{Binding Price}" HorizontalAlignment="Center" ContentStringFormat="{}{0} Ft" Grid.Column="2"/>
+                <Label Content="{Binding Size}" HorizontalAlignment="Center" ContentStringFormat="{}{0} cm" Grid.Column="3"/>
+                <Label Content="{Binding RestaurantName}" HorizontalAlignment="Center" Grid.Column="4"/>
+                <Label Content="{Binding GlutenFree}"  HorizontalAlignment="Center" Grid.Column="5" FontFamily="Wingdings 2" FontSize="20"/>
+            </Grid>
+        </DataTemplate>
+        <Style x:Key="FocusVisual">
+            <Setter Property="Control.Template">
+                <Setter.Value>
+                    <ControlTemplate>
+                        <Rectangle Margin="2" StrokeDashArray="1 2" SnapsToDevicePixels="true" StrokeThickness="1" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <SolidColorBrush x:Key="Button.Static.Background" Color="Salmon"/>
+        <SolidColorBrush x:Key="Button.Static.Border" Color="#FFF4F4F4"/>
+        <SolidColorBrush x:Key="Button.MouseOver.Background" Color="LightSalmon"/>
+        <SolidColorBrush x:Key="Button.MouseOver.Border" Color="#FFF4F4F4"/>
+        <SolidColorBrush x:Key="Button.Pressed.Background" Color="DarkSalmon"/>
+        <SolidColorBrush x:Key="Button.Pressed.Border" Color="#FFF4F4F4"/>
+        <SolidColorBrush x:Key="Button.Disabled.Background" Color="#FFF4F4F4"/>
+        <SolidColorBrush x:Key="Button.Disabled.Border" Color="#FFADB2B5"/>
+        <SolidColorBrush x:Key="Button.Disabled.Foreground" Color="#FF838383"/>
+        <Style x:Key="ButtonStyle1" TargetType="{x:Type Button}">
+            <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
+            <Setter Property="Background" Value="{StaticResource Button.Static.Background}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Button.Static.Border}"/>
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}" SnapsToDevicePixels="true">
+                            <ContentPresenter x:Name="contentPresenter" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsDefaulted" Value="true">
+                                <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="true">
+                                <Setter Property="Background" TargetName="border" Value="{StaticResource Button.MouseOver.Background}"/>
+                                <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource Button.MouseOver.Border}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="true">
+                                <Setter Property="Background" TargetName="border" Value="{StaticResource Button.Pressed.Background}"/>
+                                <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource Button.Pressed.Border}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="false">
+                                <Setter Property="Background" TargetName="border" Value="{StaticResource Button.Disabled.Background}"/>
+                                <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource Button.Disabled.Border}"/>
+                                <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{StaticResource Button.Disabled.Foreground}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Grid DataContext="{StaticResource VM}" Background="LightSalmon" >
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="1*"/>
+            <RowDefinition Height="40"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="1*"/>
+            </Grid.ColumnDefinitions>
+            <Label Content="ID" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="0" Grid.Column="0" FontSize="12" FontWeight="Bold"/>
+            <Label Content="Name" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="0" Grid.Column="1" FontSize="12" FontWeight="Bold"/>
+            <Label Content="Price" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="0" Grid.Column="2" FontSize="12" FontWeight="Bold"/>
+            <Label Content="Size" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="0" Grid.Column="3" FontSize="12" FontWeight="Bold"/>
+            <Label Content="Restaurant" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="0" Grid.Column="4" FontSize="12" FontWeight="Bold"/>
+            <Label Content="Gluten-free" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="0" Grid.Column="5" FontSize="12" FontWeight="Bold" />
+            <Border Grid.Row="0"/>
+        </Grid>
+        <ListBox ItemsSource="{Binding Pizzas}" SelectedItem="{Binding CurrentPizza}" HorizontalContentAlignment="Stretch" ItemTemplate="{StaticResource PizzaListTemplate}" x:Name="PizzaList" Grid.Row="1" FontSize="12">
+            <ListBox.Background>
+                <ImageBrush ImageSource="/Others/pizza.jpg" Opacity="0.4" TileMode="None" Stretch="UniformToFill"/>
+            </ListBox.Background>
+        </ListBox>
+        <StackPanel Orientation="Horizontal" Grid.Row="2" HorizontalAlignment="Center">
+            <Button Style="{DynamicResource ButtonStyle1}" Content="Load" FontSize="12" FontWeight="Bold" Margin="5" MinWidth="50" Command="{Binding LoadCommand}" Background="Salmon"/>
+            <Button Style="{DynamicResource ButtonStyle1}" Content="View" FontSize="12" FontWeight="Bold" Margin="5" MinWidth="50" Command="{Binding ViewCommand}" Background="Salmon"/>
+            <Button Style="{DynamicResource ButtonStyle1}" Content="Add" FontSize="12" FontWeight="Bold" Margin="5" MinWidth="50" Command="{Binding AddCommand}" Background="Salmon"/>
+            <Button Style="{DynamicResource ButtonStyle1}" Content="Modify" FontSize="12" FontWeight="Bold" Margin="5" MinWidth="50" Command="{Binding ModifyCommand}" Background="Salmon"/>
+            <Button Style="{DynamicResource ButtonStyle1}" Content="Delete" FontSize="12" FontWeight="Bold" Margin="5" MinWidth="50" Command="{Binding DeleteCommand}" Background="Salmon"/>
+        </StackPanel>
+    </Grid>
+</Window>
